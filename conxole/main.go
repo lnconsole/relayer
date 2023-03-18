@@ -127,12 +127,12 @@ func main() {
 	// subscribe to events relevant to conxole
 	now := time.Now()
 	filters := nostr.Filters{
-		// {
-		// 	// special case, run for the first time, then remove
-		// 	Kinds: []int{
-		// 		nostr.KindSetMetadata, // 0
-		// 	},
-		// },
+		{
+			// special case, run for the first time, then remove
+			Kinds: []int{
+				nostr.KindSetMetadata, // 0
+			},
+		},
 		{
 			Kinds: []int{
 				nostr.KindSetMetadata,    // 0
