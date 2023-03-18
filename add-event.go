@@ -3,17 +3,13 @@ package relayer
 import (
 	"fmt"
 
-	"github.com/fiatjaf/relayer/storage"
+	"github.com/lnconsole/relayer/storage"
 	"github.com/nbd-wtf/go-nostr"
 )
 
 func AddEvent(relay Relay, evt nostr.Event) (accepted bool, message string) {
 	store := relay.Storage()
 	advancedSaver, _ := store.(AdvancedSaver)
-
-	if !relay.AcceptEvent(&evt) {
-		return false, "blocked: event blocked by relay"
-	}
 
 	if 20000 <= evt.Kind && evt.Kind < 30000 {
 		// do not store ephemeral events

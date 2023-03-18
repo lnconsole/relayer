@@ -25,6 +25,8 @@ type Relay interface {
 	// Otherwise, the server responds with a negative and "blocked" message as described
 	// in NIP-20.
 	AcceptEvent(*nostr.Event) bool
+	// BroadcastEvent broadcasts event to all other relays
+	BroadcastEvent(*nostr.Event)
 	// Storage returns the relay storage implementation.
 	Storage() Storage
 }

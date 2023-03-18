@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -40,7 +39,7 @@ var upgrader = websocket.Upgrader{
 
 func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 	store := s.relay.Storage()
-	advancedDeleter, _ := store.(AdvancedDeleter)
+	// advancedDeleter, _ := store.(AdvancedDeleter)
 	advancedQuerier, _ := store.(AdvancedQuerier)
 
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -153,30 +152,12 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 
-					if evt.Kind == 5 {
-						// event deletion -- nip09
-						for _, tag := range evt.Tags {
-							if len(tag) >= 2 && tag[0] == "e" {
-								if advancedDeleter != nil {
-									advancedDeleter.BeforeDelete(tag[1], evt.PubKey)
-								}
-
-								if err := store.DeleteEvent(tag[1], evt.PubKey); err != nil {
-									ws.WriteJSON([]interface{}{"OK", evt.ID, false, fmt.Sprintf("error: %s", err.Error())})
-									return
-								}
-
-								if advancedDeleter != nil {
-									advancedDeleter.AfterDelete(tag[1], evt.PubKey)
-								}
-							}
-						}
+					if !s.relay.AcceptEvent(&evt) {
+						ws.WriteJSON([]interface{}{"OK", evt.ID, false, "blocked: event blocked by relay"})
 						return
 					}
 
-					ok, message := AddEvent(s.relay, evt)
-					ws.WriteJSON([]interface{}{"OK", evt.ID, ok, message})
-
+					ws.WriteJSON([]interface{}{"OK", evt.ID, true, message})
 				case "REQ":
 					var id string
 					json.Unmarshal(request[1], &id)
