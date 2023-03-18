@@ -32,7 +32,5 @@ func AddEvent(relay Relay, evt nostr.Event) (accepted bool, message string) {
 		}
 	}
 
-	notifyListeners(&evt)
-
 	return true, ""
 }

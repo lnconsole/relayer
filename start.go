@@ -126,19 +126,11 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) startListener(ln net.Listener) error {
-	// init the relay
-	if err := s.relay.Storage().Init(); err != nil {
-		return fmt.Errorf("storage init: %w", err)
-	}
-	if err := s.relay.Init(); err != nil {
-		return fmt.Errorf("relay init: %w", err)
-	}
-
 	// push events from implementations, if any
 	if inj, ok := s.relay.(Injector); ok {
 		go func() {
 			for event := range inj.InjectEvents() {
-				notifyListeners(&event)
+				NotifyListeners(&event)
 			}
 		}()
 	}

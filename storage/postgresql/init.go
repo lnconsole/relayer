@@ -13,7 +13,7 @@ func (b *PostgresBackend) Init() error {
 	}
 
 	// sqlx default is 0 (unlimited), while postgresql by default accepts up to 100 connections
-	db.SetMaxOpenConns(80)
+	// db.SetMaxOpenConns(80)
 
 	db.Mapper = reflectx.NewMapperFunc("json", sqlx.NameMapper)
 	b.DB = db

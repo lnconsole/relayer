@@ -90,7 +90,7 @@ func removeListener(ws *WebSocket) {
 	}
 }
 
-func notifyListeners(event *nostr.Event) {
+func NotifyListeners(event *nostr.Event) {
 	listenersMutex.Lock()
 	defer func() {
 		listenersMutex.Unlock()

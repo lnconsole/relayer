@@ -17,9 +17,6 @@ import (
 
 // TODO: consider moving these to Server as config params
 const (
-	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
-
 	// Time allowed to read the next pong message from the peer.
 	pongWait = 60 * time.Second
 
@@ -151,11 +148,14 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 						ws.WriteJSON([]interface{}{"OK", evt.ID, false, "invalid: signature is invalid"})
 						return
 					}
-
+					// check if relay accepts this event
 					if !s.relay.AcceptEvent(&evt) {
 						ws.WriteJSON([]interface{}{"OK", evt.ID, false, "blocked: event blocked by relay"})
 						return
 					}
+					// save event and broadcast
+					AddEvent(s.relay, evt)
+					s.relay.BroadcastEvent(evt)
 
 					ws.WriteJSON([]interface{}{"OK", evt.ID, true, message})
 				case "REQ":
@@ -183,7 +183,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 						if _, ok := s.relay.(Auther); ok {
 							if slices.Contains(filter.Kinds, 4) {
 								senders := filter.Authors
-								receivers, _ := filter.Tags["p"]
+								receivers := filter.Tags["p"]
 								switch {
 								case ws.authed == "":
 									// not authenticated
@@ -273,14 +273,11 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 			conn.Close()
 		}()
 
-		for {
-			select {
-			case <-ticker.C:
-				err := ws.WriteMessage(websocket.PingMessage, nil)
-				if err != nil {
-					s.Log.Errorf("error writing ping: %v; closing websocket", err)
-					return
-				}
+		for range ticker.C {
+			err := ws.WriteMessage(websocket.PingMessage, nil)
+			if err != nil {
+				s.Log.Errorf("error writing ping: %v; closing websocket", err)
+				return
 			}
 		}
 	}()

@@ -26,7 +26,7 @@ type Relay interface {
 	// in NIP-20.
 	AcceptEvent(*nostr.Event) bool
 	// BroadcastEvent broadcasts event to all other relays
-	BroadcastEvent(*nostr.Event)
+	BroadcastEvent(nostr.Event)
 	// Storage returns the relay storage implementation.
 	Storage() Storage
 }

@@ -68,7 +68,7 @@ func (b PostgresBackend) QueryEvents(filter *nostr.Filter) (events []nostr.Event
 	}
 
 	if filter.Kinds != nil {
-		if len(filter.Kinds) > 10 {
+		if len(filter.Kinds) > 15 {
 			// too many kinds, fail everything
 			return
 		}
@@ -95,7 +95,7 @@ func (b PostgresBackend) QueryEvents(filter *nostr.Filter) (events []nostr.Event
 		// add these tags to the query
 		tagQuery = append(tagQuery, values...)
 
-		if len(tagQuery) > 10 {
+		if len(tagQuery) > 20 {
 			// too many tags, fail everything
 			return
 		}

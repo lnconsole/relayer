@@ -68,7 +68,7 @@ func (tr *testRelay) AcceptEvent(e *nostr.Event) bool {
 	return true
 }
 
-func (tr *testRelay) BroadcastEvent(event *nostr.Event) {}
+func (tr *testRelay) BroadcastEvent(event nostr.Event) {}
 
 type testStorage struct {
 	init        func() error

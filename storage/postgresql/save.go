@@ -11,11 +11,11 @@ func (b *PostgresBackend) SaveEvent(evt *nostr.Event) error {
 	// react to different kinds of events
 	if evt.Kind == nostr.KindSetMetadata || evt.Kind == nostr.KindContactList || (10000 <= evt.Kind && evt.Kind < 20000) {
 		// delete past events from this user
-		b.DB.Exec(`DELETE FROM event WHERE pubkey = $1 AND kind = $2`, evt.PubKey, evt.Kind)
+		b.DB.Exec(`DELETE FROM event WHERE pubkey = $1 AND kind = $2 AND created_at < $3`, evt.PubKey, evt.Kind, evt.CreatedAt.Unix())
 	} else if evt.Kind == nostr.KindRecommendServer {
 		// delete past recommend_server events equal to this one
-		b.DB.Exec(`DELETE FROM event WHERE pubkey = $1 AND kind = $2 AND content = $3`,
-			evt.PubKey, evt.Kind, evt.Content)
+		b.DB.Exec(`DELETE FROM event WHERE pubkey = $1 AND kind = $2 AND content = $3 AND created_at < $4`,
+			evt.PubKey, evt.Kind, evt.Content, evt.CreatedAt.Unix())
 	}
 
 	// insert
