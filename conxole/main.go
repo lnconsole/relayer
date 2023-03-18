@@ -124,15 +124,9 @@ func main() {
 	if err := proxy.Init(r.Relays); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}
-	// subscribe to events relevant to conxole
+	// define filters relevant to conxole
 	now := time.Now()
 	filters := nostr.Filters{
-		// {
-		// 	// special case, run for the first time, then remove
-		// 	Kinds: []int{
-		// 		nostr.KindSetMetadata, // 0
-		// 	},
-		// },
 		{
 			Kinds: []int{
 				nostr.KindSetMetadata,    // 0
@@ -150,6 +144,19 @@ func main() {
 			Authors: []string{r.BotPubkey},
 		},
 	}
+	// if first time subscribing to kind0, grab all existing kind zeroes
+	kindZeroes := 0
+	r.storage.DB.Get(
+		&kindZeroes,
+		"SELECT count(*) FROM event WHERE kind = $1",
+		nostr.KindSetMetadata,
+	)
+	if kindZeroes > 0 {
+		filters = append(filters, nostr.Filter{
+			Kinds: []int{nostr.KindSetMetadata},
+		})
+	}
+	// subscribe
 	r.SubscribeEvents(filters)
 	// start the server
 	if err := relayer.Start(&r); err != nil {
