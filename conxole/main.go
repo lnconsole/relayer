@@ -140,8 +140,8 @@ func main() {
 			Kinds: []int{
 				nostr.KindEncryptedDirectMessage, // 4
 			},
-			Since:   &now,
-			Authors: []string{r.BotPubkey},
+			Since: &now,
+			Tags:  nostr.TagMap{"p": []string{r.BotPubkey}},
 		},
 	}
 	// if first time subscribing to kind0, grab all existing kind zeroes
