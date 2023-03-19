@@ -126,13 +126,13 @@ func main() {
 	}
 	// define filters relevant to conxole
 	now := time.Now()
-	oneHour := time.Now().Add(-250 * time.Hour)
+	oneDay := time.Now().Add(-24 * time.Hour)
 	filters := nostr.Filters{
 		{
 			Kinds: []int{
 				nostr.KindSetMetadata, // 0
 			},
-			Since: &oneHour,
+			Since: &oneDay,
 		},
 		{
 			Kinds: []int{
