@@ -126,7 +126,14 @@ func main() {
 	}
 	// define filters relevant to conxole
 	now := time.Now()
+	oneHour := time.Now().Add(-750 * time.Hour)
 	filters := nostr.Filters{
+		{
+			Kinds: []int{
+				nostr.KindSetMetadata, // 0
+			},
+			Since: &oneHour,
+		},
 		{
 			Kinds: []int{
 				nostr.KindTextNote,       // 1
@@ -143,22 +150,6 @@ func main() {
 			Tags:  nostr.TagMap{"p": []string{r.BotPubkey}},
 		},
 	}
-	// if first time subscribing to kind0, grab all existing kind zeroes
-	var (
-		// kindZeroes  = 0
-		threeMonths = time.Now().Add(-1000 * time.Hour)
-	)
-	// r.storage.DB.Get(
-	// 	&kindZeroes,
-	// 	"SELECT count(*) FROM event WHERE kind = $1",
-	// 	nostr.KindSetMetadata,
-	// )
-	// if kindZeroes == 0 {
-	filters = append(filters, nostr.Filter{
-		Kinds: []int{nostr.KindSetMetadata},
-		Since: &threeMonths,
-	})
-	// }
 	// subscribe
 	r.SubscribeEvents(filters)
 	// start the server
