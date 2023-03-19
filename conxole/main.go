@@ -151,7 +151,7 @@ func main() {
 		"SELECT count(*) FROM event WHERE kind = $1",
 		nostr.KindSetMetadata,
 	)
-	if kindZeroes > 0 {
+	if kindZeroes == 0 {
 		filters = append(filters, nostr.Filter{
 			Kinds: []int{nostr.KindSetMetadata},
 		})
