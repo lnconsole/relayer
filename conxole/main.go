@@ -129,7 +129,6 @@ func main() {
 	filters := nostr.Filters{
 		{
 			Kinds: []int{
-				nostr.KindSetMetadata,    // 0
 				nostr.KindTextNote,       // 1
 				nostr.KindChannelMessage, // 42
 				nostr.KindZap,            // 9735
@@ -145,17 +144,21 @@ func main() {
 		},
 	}
 	// if first time subscribing to kind0, grab all existing kind zeroes
-	kindZeroes := 0
-	r.storage.DB.Get(
-		&kindZeroes,
-		"SELECT count(*) FROM event WHERE kind = $1",
-		nostr.KindSetMetadata,
+	var (
+		// kindZeroes  = 0
+		threeMonths = time.Now().Add(-2160 * time.Hour)
 	)
-	if kindZeroes == 0 {
-		filters = append(filters, nostr.Filter{
-			Kinds: []int{nostr.KindSetMetadata},
-		})
-	}
+	// r.storage.DB.Get(
+	// 	&kindZeroes,
+	// 	"SELECT count(*) FROM event WHERE kind = $1",
+	// 	nostr.KindSetMetadata,
+	// )
+	// if kindZeroes == 0 {
+	filters = append(filters, nostr.Filter{
+		Kinds: []int{nostr.KindSetMetadata},
+		Since: &threeMonths,
+	})
+	// }
 	// subscribe
 	r.SubscribeEvents(filters)
 	// start the server
