@@ -146,7 +146,7 @@ func main() {
 	// if first time subscribing to kind0, grab all existing kind zeroes
 	var (
 		// kindZeroes  = 0
-		threeMonths = time.Now().Add(-2160 * time.Hour)
+		threeMonths = time.Now().Add(-1660 * time.Hour)
 	)
 	// r.storage.DB.Get(
 	// 	&kindZeroes,
