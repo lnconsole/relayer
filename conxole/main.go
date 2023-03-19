@@ -126,7 +126,7 @@ func main() {
 	}
 	// define filters relevant to conxole
 	now := time.Now()
-	oneHour := time.Now().Add(-500 * time.Hour)
+	oneHour := time.Now().Add(-250 * time.Hour)
 	filters := nostr.Filters{
 		{
 			Kinds: []int{
