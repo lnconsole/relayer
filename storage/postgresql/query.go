@@ -128,9 +128,9 @@ func (b PostgresBackend) QueryEvents(filter *nostr.Filter) (events []nostr.Event
 		conditions = append(conditions, "true")
 	}
 
-	if filter.Limit < 1 || filter.Limit > 100 {
-		params = append(params, 100)
-	} else {
+	limit := ""
+	if filter.Limit > 0 {
+		limit = " LIMIT ?"
 		params = append(params, filter.Limit)
 	}
 
@@ -138,7 +138,7 @@ func (b PostgresBackend) QueryEvents(filter *nostr.Filter) (events []nostr.Event
       id, pubkey, created_at, kind, tags, content, sig
     FROM event WHERE ` +
 		strings.Join(conditions, " AND ") +
-		" ORDER BY created_at DESC LIMIT ?")
+		" ORDER BY created_at DESC" + limit)
 
 	rows, err := b.DB.Query(query, params...)
 	if err != nil && err != sql.ErrNoRows {
