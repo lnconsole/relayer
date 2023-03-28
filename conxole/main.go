@@ -126,16 +126,10 @@ func main() {
 	}
 	// define filters relevant to conxole
 	now := time.Now()
-	oneDay := time.Now().Add(-24 * time.Hour)
 	filters := nostr.Filters{
 		{
 			Kinds: []int{
-				nostr.KindSetMetadata, // 0
-			},
-			Since: &oneDay,
-		},
-		{
-			Kinds: []int{
+				nostr.KindSetMetadata,    // 0
 				nostr.KindTextNote,       // 1
 				nostr.KindChannelMessage, // 42
 				nostr.KindZap,            // 9735
