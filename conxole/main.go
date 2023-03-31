@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	sm "github.com/SaveTheRbtz/generic-sync-map-go"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/lnconsole/relayer"
@@ -24,6 +25,7 @@ type Relay struct {
 	Prod             bool     `envconfig:"PROD"`
 
 	storage *postgresql.PostgresBackend
+	seen    sm.MapOf[string, struct{}]
 }
 
 func (r *Relay) Name() string {
@@ -55,6 +57,8 @@ func (r *Relay) Init() error {
 			time.Sleep(5 * time.Minute)
 		}
 	}()
+	// init seen map
+	r.seen = sm.MapOf[string, struct{}]{}
 
 	return nil
 }
@@ -93,8 +97,23 @@ func (r *Relay) SubscribeEvents(filters nostr.Filters) {
 
 	go func() {
 		for em := range events {
-			relayer.AddEvent(r, em.Event)
-			relayer.NotifyListeners(&em.Event)
+			if _, ok := r.seen.LoadOrStore(em.Event.ID, struct{}{}); !ok {
+				// if unseen, save and notify listeners
+				relayer.AddEvent(r, em.Event)
+				relayer.NotifyListeners(&em.Event)
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			count := 0
+			r.seen.Range(func(key string, value struct{}) bool {
+				count += 1
+				return true
+			})
+			log.Printf("size of seen: %d", count)
+			time.Sleep(5 * time.Minute)
 		}
 	}()
 }

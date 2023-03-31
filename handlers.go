@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -107,6 +108,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 				defer func() {
 					if notice != "" {
 						ws.WriteJSON([]interface{}{"NOTICE", notice})
+						s.Log.Infof("notice: %s", notice)
 					}
 				}()
 
@@ -165,6 +167,14 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 						notice = "REQ has no <id>"
 						return
 					}
+
+					msg := string(message)
+					trunc := msg[:min(len(msg), 125)]
+					if trunc != "" {
+						trunc = strings.TrimSuffix(trunc, "\n")
+						trunc += "..."
+					}
+					s.Log.Infof("req: %s", trunc)
 
 					filters := make(nostr.Filters, len(request)-2)
 					for i, filterReq := range request[2:] {
@@ -306,4 +316,11 @@ func (s *Server) handleNIP11(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(info)
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
