@@ -65,16 +65,16 @@ func (r *Relay) Init() error {
 
 func (r *Relay) AcceptEvent(evt *nostr.Event) bool {
 	// disallow anything from non-authorized pubkeys
-	found := false
-	for _, pubkey := range r.Whitelist {
-		if pubkey == evt.PubKey {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return false
-	}
+	// found := false
+	// for _, pubkey := range r.Whitelist {
+	// 	if pubkey == evt.PubKey {
+	// 		found = true
+	// 		break
+	// 	}
+	// }
+	// if !found {
+	// 	return false
+	// }
 
 	// block events that are too large
 	jsonb, _ := json.Marshal(evt)
@@ -118,6 +118,16 @@ func (r *Relay) SubscribeEvents(filters nostr.Filters) {
 	}()
 }
 
+/*
+Conxole -> Relay
+- SubscribeEvents on hardcoded relays. When event is received from these relays, listeners are notified
+- send "EVENT". if event is accepted, it'll be saved in db, and broadcasted to hardcoded relays
+
+External Client -> Relay
+- This shouldn't happen on prod, only on dev for testing
+- send "EVENT". if event is accepted, it'll be saved in db, and listeners should be notified
+- send "REQ". Should work like normal
+*/
 func main() {
 	// load env file
 	if err := godotenv.Load(); err != nil {
@@ -149,7 +159,6 @@ func main() {
 		{
 			Kinds: []int{
 				nostr.KindSetMetadata,    // 0
-				nostr.KindTextNote,       // 1
 				nostr.KindChannelMessage, // 42
 				nostr.KindZap,            // 9735
 			},
@@ -157,6 +166,7 @@ func main() {
 		},
 		{
 			Kinds: []int{
+				nostr.KindTextNote,               // 1
 				nostr.KindEncryptedDirectMessage, // 4
 			},
 			Since: &now,

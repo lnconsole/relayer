@@ -155,9 +155,12 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 						ws.WriteJSON([]interface{}{"OK", evt.ID, false, "blocked: event blocked by relay"})
 						return
 					}
-					// save event and broadcast
+					// save event
 					AddEvent(s.relay, evt)
+					// broadcast to relays
 					s.relay.BroadcastEvent(evt)
+					// notify listeners
+					NotifyListeners(&evt)
 
 					ws.WriteJSON([]interface{}{"OK", evt.ID, true, message})
 				case "REQ":
