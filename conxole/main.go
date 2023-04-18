@@ -54,6 +54,12 @@ func (r *Relay) Init() error {
 				time.Now().Add(-60*time.Minute).Unix(),
 				param,
 			)
+			// temporary. needs refactor
+			db.Exec(
+				`DELETE FROM event WHERE kind = 42 AND created_at < $1`,
+				time.Now().Add(-24*time.Hour).Unix(),
+				param,
+			)
 			time.Sleep(5 * time.Minute)
 		}
 	}()
