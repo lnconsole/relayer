@@ -174,6 +174,7 @@ func main() {
 			Kinds: []int{
 				nostr.KindTextNote,               // 1
 				nostr.KindEncryptedDirectMessage, // 4
+				33333,                            // beatzcoin
 			},
 			Since: &now,
 			Tags:  nostr.TagMap{"p": []string{r.BotPubkey}},

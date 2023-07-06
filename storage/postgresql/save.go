@@ -16,6 +16,11 @@ func (b *PostgresBackend) SaveEvent(evt *nostr.Event) error {
 		// delete past recommend_server events equal to this one
 		b.DB.Exec(`DELETE FROM event WHERE pubkey = $1 AND kind = $2 AND content = $3 AND created_at < $4`,
 			evt.PubKey, evt.Kind, evt.Content, evt.CreatedAt.Unix())
+	} else if evt.Kind >= 30000 && evt.Kind < 40000 {
+		// NIP-33
+		d := evt.Tags.GetFirst([]string{"d"})
+		b.DB.Exec(`DELETE FROM event WHERE pubkey = $1 AND kind = $2 AND created_at < $3 AND tagvalues && ARRAY[$4]`,
+			evt.PubKey, evt.Kind, evt.CreatedAt.Unix(), d.Value())
 	}
 
 	// insert
