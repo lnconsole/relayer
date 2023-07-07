@@ -22,6 +22,7 @@ type Relay struct {
 	PersistKinds     []int    `envconfig:"PERSIST_KINDS"`
 	Relays           []string `envconfig:"RELAYS"`
 	BotPubkey        string   `envconfig:"CONXOLE_BOT_PUBKEY"`
+	BeatzcoinPubkey  string   `envconfig:"BEATZCOIN_PUBKEY"`
 	Prod             bool     `envconfig:"PROD"`
 
 	storage *postgresql.PostgresBackend
@@ -174,10 +175,23 @@ func main() {
 			Kinds: []int{
 				nostr.KindTextNote,               // 1
 				nostr.KindEncryptedDirectMessage, // 4
-				33333,                            // beatzcoin
 			},
 			Since: &now,
 			Tags:  nostr.TagMap{"p": []string{r.BotPubkey}},
+		},
+		{
+			Kinds: []int{
+				nostr.KindEncryptedDirectMessage, // 4
+			},
+			Since: &now,
+			Tags:  nostr.TagMap{"p": []string{r.BeatzcoinPubkey}},
+		},
+		{
+			Authors: []string{r.BeatzcoinPubkey},
+			Kinds: []int{
+				33333, // beatzcoin
+			},
+			Since: &now,
 		},
 	}
 	// subscribe
