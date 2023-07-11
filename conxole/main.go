@@ -186,13 +186,6 @@ func main() {
 			Since: &now,
 			Tags:  nostr.TagMap{"p": []string{r.BeatzcoinPubkey}},
 		},
-		{
-			Authors: []string{r.BeatzcoinPubkey},
-			Kinds: []int{
-				33333, // beatzcoin
-			},
-			Since: &now,
-		},
 	}
 	// subscribe
 	r.SubscribeEvents(filters)
