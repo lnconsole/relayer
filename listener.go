@@ -1,6 +1,7 @@
 package relayer
 
 import (
+	"log"
 	"sync"
 
 	"github.com/nbd-wtf/go-nostr"
@@ -101,7 +102,9 @@ func NotifyListeners(event *nostr.Event) {
 			if !listener.filters.Match(event) {
 				continue
 			}
-			ws.WriteJSON([]interface{}{"EVENT", id, event})
+			if err := ws.WriteJSON([]interface{}{"EVENT", id, event}); err != nil {
+				log.Printf("failed to write event %v: %s", event, err)
+			}
 		}
 	}
 }
