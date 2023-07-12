@@ -94,6 +94,10 @@ func (r *Relay) BroadcastEvent(event nostr.Event) {
 	if !r.Prod {
 		return
 	}
+	// don't broadcast if it's a beatzcoin kind 33333
+	if event.Kind == 33333 {
+		return
+	}
 	if err := proxy.Broadcast(event); err != nil {
 		log.Printf("broadcast error: %s", err)
 	}
