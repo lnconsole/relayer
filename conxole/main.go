@@ -172,6 +172,9 @@ func main() {
 				nostr.KindSetMetadata,    // 0
 				nostr.KindChannelMessage, // 42
 				nostr.KindZap,            // 9735
+				65000,
+				65001,
+				65005,
 			},
 			Since: &now,
 		},
