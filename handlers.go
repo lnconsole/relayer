@@ -158,7 +158,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					// save event
 					AddEvent(s.relay, evt)
 					// broadcast to relays
-					s.relay.BroadcastEvent(evt)
+					go s.relay.BroadcastEvent(evt)
 					// notify listeners
 					NotifyListeners(&evt)
 
