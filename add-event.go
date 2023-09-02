@@ -1,13 +1,14 @@
 package relayer
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/lnconsole/relayer/storage"
 	"github.com/nbd-wtf/go-nostr"
 )
 
-func AddEvent(relay Relay, evt nostr.Event) (accepted bool, message string) {
+func AddEvent(ctx context.Context, relay Relay, evt nostr.Event) (accepted bool, message string) {
 	store := relay.Storage()
 	advancedSaver, _ := store.(AdvancedSaver)
 
@@ -18,7 +19,7 @@ func AddEvent(relay Relay, evt nostr.Event) (accepted bool, message string) {
 			advancedSaver.BeforeSave(&evt)
 		}
 
-		if saveErr := store.SaveEvent(&evt); saveErr != nil {
+		if saveErr := store.SaveEvent(ctx, &evt); saveErr != nil {
 			switch saveErr {
 			case storage.ErrDupEvent:
 				return true, saveErr.Error()
