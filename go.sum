@@ -21,6 +21,8 @@ github.com/elastic/go-elasticsearch/v8 v8.6.0 h1:xMaSe8jIh7NHzmNo9YBkewmaD2Pr+tX
 github.com/elastic/go-elasticsearch/v8 v8.6.0/go.mod h1:Usvydt+x0dv9a1TzEUaovqbJor8rmOHy5dSmPeMAE2k=
 github.com/fatih/structs v1.1.0 h1:Q7juDM0QtcnhCpeyLGQKyg4TOIghuNXrkL32pHAUMxo=
 github.com/fatih/structs v1.1.0/go.mod h1:9NiDSp5zOcgEDl+j00MP/WkGVPOlPRLejGD8Ga6PJ7M=
+github.com/felixge/httpsnoop v1.0.3 h1:s/nj+GCswXYzN5v2DpNMuMQYe+0DDwt5WVCU6CWBdXk=
+github.com/felixge/httpsnoop v1.0.3/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/fiatjaf/relayer v1.7.2 h1:MlFVIH9faOqsHpsWhjMMJc7yxgvh6FFL18kQGhqUdDw=
 github.com/fiatjaf/relayer v1.7.2/go.mod h1:cQGM8YSoU/7I79Mg9ULlLQWYm/U54/B/4k60fRXEY2o=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
@@ -71,6 +73,8 @@ github.com/uptrace/uptrace-go v1.17.0 h1:LI3YuMe6MU3XVrY/jnXNt8U/N8GhloMw84tyG5i
 github.com/uptrace/uptrace-go v1.17.0/go.mod h1:PTMz3d9qiFwvLeea8v5FLV2+9QwYhJMs04N9le81JXA=
 github.com/valyala/fastjson v1.6.4 h1:uAUNq9Z6ymTgGhcm0UynUAB6tlbakBrz6CQFax3BXVQ=
 github.com/valyala/fastjson v1.6.4/go.mod h1:CLCAqky6SMuOcxStkYQvblddUtoRxhYMGLrsQns1aXY=
+go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.43.0 h1:1S+AB8v6zJf52DsSI/6SGH0uVeYhosHZ9Vpw2poIo2M=
+go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.43.0/go.mod h1:lWkJ2qSWnz7y0hVKFWcDzmdZy5h+DTBeQKZHotTvqPI=
 go.opentelemetry.io/contrib/instrumentation/runtime v0.43.0 h1:NunhgxcK14rU7Hw2gKtV6uCSyohkXPisqneRFjnZNKQ=
 go.opentelemetry.io/contrib/instrumentation/runtime v0.43.0/go.mod h1:rwb7icgpDjIhhHqv1qPGw6dDjAdAR7IKAe4PQdzBbsg=
 go.opentelemetry.io/otel v1.17.0 h1:MW+phZ6WZ5/uk2nd93ANk/6yJ+dVrvNWUjGhnnFU5jM=

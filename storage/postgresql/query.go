@@ -141,7 +141,7 @@ func (b PostgresBackend) QueryEvents(ctx context.Context, filter *nostr.Filter) 
 		strings.Join(conditions, " AND ") +
 		" ORDER BY created_at DESC" + limit)
 
-	rows, err := b.DB.Query(query, params...)
+	rows, err := b.DB.QueryContext(ctx, query, params...)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, fmt.Errorf("failed to fetch events using query %q: %w", query, err)
 	}
