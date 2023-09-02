@@ -1,6 +1,7 @@
 package postgresql
 
 import (
+	"context"
 	"database/sql"
 	"encoding/hex"
 	"errors"
@@ -12,7 +13,7 @@ import (
 	"github.com/nbd-wtf/go-nostr"
 )
 
-func (b PostgresBackend) QueryEvents(filter *nostr.Filter) (events []nostr.Event, err error) {
+func (b PostgresBackend) QueryEvents(ctx context.Context, filter *nostr.Filter) (events []nostr.Event, err error) {
 	var conditions []string
 	var params []any
 

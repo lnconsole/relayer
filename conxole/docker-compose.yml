@@ -1,19 +1,19 @@
 version: "3.8"
 services:
 
-  relay:
-    build:
-      context: ../
-      dockerfile: ./basic/Dockerfile
-    environment:
-      PORT: 2700
-      POSTGRESQL_DATABASE: postgres://nostr:nostr@postgres:5432/nostr?sslmode=disable
-    depends_on:
-      postgres:
-        condition: service_healthy
-    ports:
-      - 2700:2700
-    command: "./basic/relayer-basic"
+#  relay:
+#    build:
+#      context: ../
+#      dockerfile: ./conxole/Dockerfile
+#    environment:
+#      PORT: 2700
+#      POSTGRESQL_DATABASE: postgres://nostr:nostr@postgres:5432/nostr?sslmode=disable
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#    ports:
+#      - 2700:2700
+#    command: "./conxole/conxole"
 
   postgres:
     image: postgres

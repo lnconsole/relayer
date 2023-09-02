@@ -75,11 +75,11 @@ type Storage interface {
 	Init() error
 
 	// QueryEvents is invoked upon a client's REQ as described in NIP-01.
-	QueryEvents(filter *nostr.Filter) (events []nostr.Event, err error)
+	QueryEvents(ctx context.Context, filter *nostr.Filter) (events []nostr.Event, err error)
 	// DeleteEvent is used to handle deletion events, as per NIP-09.
-	DeleteEvent(id string, pubkey string) error
+	DeleteEvent(ctx context.Context, id string, pubkey string) error
 	// SaveEvent is called once Relay.AcceptEvent reports true.
-	SaveEvent(event *nostr.Event) error
+	SaveEvent(ctx context.Context, event *nostr.Event) error
 }
 
 // AdvancedQuerier methods are called before and after [Storage.QueryEvents].

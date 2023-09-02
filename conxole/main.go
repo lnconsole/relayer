@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/lnconsole/relayer"
+	otelUptrace "github.com/lnconsole/relayer/conxole/otel"
 	proxy "github.com/lnconsole/relayer/conxole/proxy"
 	"github.com/lnconsole/relayer/storage/postgresql"
 	"github.com/nbd-wtf/go-nostr"
@@ -103,14 +105,14 @@ func (r *Relay) BroadcastEvent(event nostr.Event) {
 	}
 }
 
-func (r *Relay) SubscribeEvents(filters nostr.Filters) {
+func (r *Relay) SubscribeEvents(ctx context.Context, filters nostr.Filters) {
 	events, _ := proxy.Sub(filters)
 
 	go func() {
 		for em := range events {
 			if _, ok := r.seen.LoadOrStore(em.Event.ID, struct{}{}); !ok {
 				// if unseen, save and notify listeners
-				relayer.AddEvent(r, em.Event)
+				relayer.AddEvent(ctx, r, em.Event)
 				relayer.NotifyListeners(&em.Event)
 			}
 		}
@@ -144,6 +146,15 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatalf("godotenv: %s", err)
 	}
+
+	// uptrace
+	otelUptrace.InitUptrace()
+	defer func() {
+		if err := otelUptrace.ShutdownUptrace(context.Background()); err != nil {
+			log.Println(err)
+		}
+	}()
+
 	r := Relay{}
 	// store env vars in relay
 	if err := envconfig.Process("", &r); err != nil {
@@ -196,7 +207,7 @@ func main() {
 		},
 	}
 	// subscribe
-	r.SubscribeEvents(filters)
+	r.SubscribeEvents(context.Background(), filters)
 	// start the server
 	if err := relayer.Start(&r); err != nil {
 		log.Fatalf("server terminated: %v", err)
