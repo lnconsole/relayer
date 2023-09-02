@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"go.opentelemetry.io/otel"
 	"log"
 	"strconv"
 	"strings"
@@ -47,22 +48,26 @@ func (r *Relay) Init() error {
 		db := r.Storage().(*postgresql.PostgresBackend)
 
 		for {
+			ctx, span := otel.Tracer("conxole-relay-tracer").Start(context.Background(), "delete-old-events-job")
 			intStrings := []string{}
 			for _, k := range r.PersistKinds {
 				intStrings = append(intStrings, strconv.Itoa(k))
 			}
 			param := "{" + strings.Join(intStrings, ",") + "}"
-			db.Exec(
+			db.ExecContext(
+				ctx,
 				`DELETE FROM event WHERE created_at < $1 AND NOT (kind = ANY($2::int[]))`,
 				time.Now().Add(-60*time.Minute).Unix(),
 				param,
 			)
 			// temporary. needs refactor
-			db.Exec(
+			db.ExecContext(
+				ctx,
 				`DELETE FROM event WHERE kind = 42 AND created_at < $1`,
 				time.Now().Add(-24*time.Hour).Unix(),
 				param,
 			)
+			span.End()
 			time.Sleep(5 * time.Minute)
 		}
 	}()

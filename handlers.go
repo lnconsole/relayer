@@ -38,9 +38,6 @@ var upgrader = websocket.Upgrader{
 }
 
 func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
-	_, span := otel.Tracer("conxole-relay-tracer").Start(r.Context(), "handleWebsocket")
-	defer span.End()
-
 	store := s.relay.Storage()
 	// advancedDeleter, _ := store.(AdvancedDeleter)
 	advancedQuerier, _ := store.(AdvancedQuerier)
@@ -317,9 +314,6 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleNIP11(w http.ResponseWriter, r *http.Request) {
-	_, span := otel.Tracer("conxole-relay-tracer").Start(r.Context(), "handleNIP11")
-	defer span.End()
-
 	w.Header().Set("Content-Type", "application/json")
 
 	supportedNIPs := []int{9, 11, 12, 15, 16, 20}

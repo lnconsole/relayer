@@ -3,6 +3,7 @@ package relayer
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"log"
 	"net"
 	"net/http"
@@ -71,15 +72,20 @@ type Server struct {
 // NewServer creates a relay server with sensible defaults.
 // The provided address is used to listen and respond to HTTP requests.
 func NewServer(addr string, relay Relay) *Server {
+	router := mux.NewRouter()
+	router.Use(otelmux.Middleware("conxole-relay"))
+
 	srv := &Server{
 		Log:     defaultLogger(relay.Name() + ": "),
 		addr:    addr,
 		relay:   relay,
-		router:  mux.NewRouter(),
+		router:  router,
 		clients: make(map[*websocket.Conn]struct{}),
 	}
+
 	srv.router.Path("/").Headers("Upgrade", "websocket").HandlerFunc(srv.handleWebsocket)
 	srv.router.Path("/").Headers("Accept", "application/nostr+json").HandlerFunc(srv.handleNIP11)
+
 	return srv
 }
 
