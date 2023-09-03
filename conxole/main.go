@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"go.opentelemetry.io/otel"
 	"log"
 	"strconv"
 	"strings"
@@ -17,6 +16,8 @@ import (
 	proxy "github.com/lnconsole/relayer/conxole/proxy"
 	"github.com/lnconsole/relayer/storage/postgresql"
 	"github.com/nbd-wtf/go-nostr"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Relay struct {
@@ -27,6 +28,7 @@ type Relay struct {
 	BotPubkey        string   `envconfig:"CONXOLE_BOT_PUBKEY"`
 	BeatzcoinPubkey  string   `envconfig:"BEATZCOIN_PUBKEY"`
 	Prod             bool     `envconfig:"PROD"`
+	tracer           trace.Tracer
 
 	storage *postgresql.PostgresBackend
 	seen    sm.MapOf[string, struct{}]
@@ -48,7 +50,7 @@ func (r *Relay) Init() error {
 		db := r.Storage().(*postgresql.PostgresBackend)
 
 		for {
-			ctx, span := otel.Tracer("conxole-relay-tracer").Start(context.Background(), "delete-old-events-job")
+			ctx, span := r.tracer.Start(context.Background(), "delete-old-events-job")
 			intStrings := []string{}
 			for _, k := range r.PersistKinds {
 				intStrings = append(intStrings, strconv.Itoa(k))
@@ -77,7 +79,10 @@ func (r *Relay) Init() error {
 	return nil
 }
 
-func (r *Relay) AcceptEvent(evt *nostr.Event) bool {
+func (r *Relay) AcceptEvent(ctx context.Context, evt *nostr.Event) bool {
+	ctx, span := r.tracer.Start(ctx, "AcceptEvent")
+	defer span.End()
+
 	// disallow anything from non-authorized pubkeys
 	// found := false
 	// for _, pubkey := range r.Whitelist {
@@ -96,7 +101,10 @@ func (r *Relay) AcceptEvent(evt *nostr.Event) bool {
 	return len(jsonb) <= 100000
 }
 
-func (r *Relay) BroadcastEvent(event nostr.Event) {
+func (r *Relay) BroadcastEvent(ctx context.Context, event nostr.Event) {
+	ctx, span := r.tracer.Start(ctx, "BroadcastEvent")
+	defer span.End()
+
 	// don't broadcast if this is not production
 	if !r.Prod {
 		return
@@ -105,12 +113,15 @@ func (r *Relay) BroadcastEvent(event nostr.Event) {
 	if event.Kind == 33333 {
 		return
 	}
-	if err := proxy.Broadcast(event); err != nil {
+	if err := proxy.Broadcast(ctx, event); err != nil {
 		log.Printf("broadcast error: %s", err)
 	}
 }
 
 func (r *Relay) SubscribeEvents(ctx context.Context, filters nostr.Filters) {
+	ctx, span := r.tracer.Start(ctx, "SubscribeEvents")
+	defer span.End()
+
 	events, _ := proxy.Sub(filters)
 
 	go func() {
@@ -134,6 +145,10 @@ func (r *Relay) SubscribeEvents(ctx context.Context, filters nostr.Filters) {
 			time.Sleep(5 * time.Minute)
 		}
 	}()
+}
+
+func (r *Relay) Tracer() trace.Tracer {
+	return r.tracer
 }
 
 /*
@@ -160,7 +175,9 @@ func main() {
 		}
 	}()
 
-	r := Relay{}
+	r := Relay{
+		tracer: otel.Tracer("conxole-relay-tracer"),
+	}
 	// store env vars in relay
 	if err := envconfig.Process("", &r); err != nil {
 		log.Fatalf("failed to read from env: %v", err)

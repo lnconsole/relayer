@@ -9,6 +9,9 @@ import (
 )
 
 func AddEvent(ctx context.Context, relay Relay, evt nostr.Event) (accepted bool, message string) {
+	ctx, span := relay.Tracer().Start(ctx, "AddEvent")
+	defer span.End()
+
 	store := relay.Storage()
 	advancedSaver, _ := store.(AdvancedSaver)
 

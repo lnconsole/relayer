@@ -3,7 +3,6 @@ package relayer
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"log"
 	"net"
 	"net/http"
@@ -15,6 +14,8 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Settings specify initial startup parameters for Start and StartConf.
@@ -67,6 +68,7 @@ type Server struct {
 	// keep a connection reference to all connected clients for Server.Shutdown
 	clientsMu sync.Mutex
 	clients   map[*websocket.Conn]struct{}
+	tracer    trace.Tracer
 }
 
 // NewServer creates a relay server with sensible defaults.
@@ -81,6 +83,7 @@ func NewServer(addr string, relay Relay) *Server {
 		relay:   relay,
 		router:  router,
 		clients: make(map[*websocket.Conn]struct{}),
+		tracer:  relay.Tracer(),
 	}
 
 	srv.router.Path("/").Headers("Upgrade", "websocket").HandlerFunc(srv.handleWebsocket)

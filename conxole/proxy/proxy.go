@@ -80,10 +80,9 @@ func gracefulCleanup(c chan struct{}) {
 	}
 }
 
-func Broadcast(event nostr.Event) error {
+func Broadcast(ctx context.Context, event nostr.Event) error {
 	var (
-		wg  sync.WaitGroup
-		ctx = context.Background()
+		wg sync.WaitGroup
 	)
 	for idx := range relays {
 		wg.Add(1)
