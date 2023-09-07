@@ -43,6 +43,19 @@ CREATE INDEX IF NOT EXISTS pubkeyprefix ON event USING btree (pubkey text_patter
 CREATE INDEX IF NOT EXISTS timeidx ON event (created_at DESC);
 CREATE INDEX IF NOT EXISTS kindidx ON event (kind);
 CREATE INDEX IF NOT EXISTS arbitrarytagvalues ON event USING gin (tagvalues);
-    `)
+
+CREATE TABLE IF NOT EXISTS activity (
+	pubkey text NOT NULL,
+	count bigint NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS pubkeyactivityidx ON activity (pubkey);
+
+CREATE TABLE IF NOT EXISTS blacklist (
+	pubkey text NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS pubkeyblacklistidx ON blacklist (pubkey);
+`)
 	return err
 }

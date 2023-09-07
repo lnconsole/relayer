@@ -3,13 +3,15 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"go.opentelemetry.io/otel"
 	"log"
 	"strconv"
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel"
+
 	sm "github.com/SaveTheRbtz/generic-sync-map-go"
+	"github.com/go-co-op/gocron"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/lnconsole/relayer"
@@ -43,6 +45,12 @@ func (r *Relay) Storage() relayer.Storage {
 func (r *Relay) OnInitialized(*relayer.Server) {}
 
 func (r *Relay) Init() error {
+	// prune kind0 events once a week
+	s := gocron.NewScheduler(time.UTC)
+	s.Cron("30 9 * * MON").Do(r.PruneProfiles)
+	// s.Cron("* * * * *").Do(r.PruneProfiles)
+	s.StartAsync()
+
 	// keep events for an hour only
 	go func() {
 		db := r.Storage().(*postgresql.PostgresBackend)
@@ -77,6 +85,15 @@ func (r *Relay) Init() error {
 	return nil
 }
 
+func (r *Relay) PruneProfiles() {
+	ctx, span := otel.Tracer("conxole-relay-tracer").Start(context.Background(), "prune-profiles")
+	defer span.End()
+
+	// delete all profiles that are blacklisted or have activity count below threshold
+	db := r.Storage().(*postgresql.PostgresBackend)
+	db.ExecContext(ctx, "DELETE FROM event WHERE kind = 0 and (pubkey IN (SELECT pubkey FROM blacklist) OR pubkey NOT IN (SELECT pubkey FROM activity WHERE count > 1))")
+}
+
 func (r *Relay) AcceptEvent(evt *nostr.Event) bool {
 	// disallow anything from non-authorized pubkeys
 	// found := false
@@ -90,13 +107,31 @@ func (r *Relay) AcceptEvent(evt *nostr.Event) bool {
 	// 	return false
 	// }
 
+	// reject if kind0 of the event is blacklisted
+	var (
+		db            = r.Storage().(*postgresql.PostgresBackend)
+		ctx, span     = otel.Tracer("conxole-relay-tracer").Start(context.Background(), "accept-event")
+		isBlacklisted bool
+	)
+	defer span.End()
+
+	db.GetContext(
+		ctx,
+		&isBlacklisted,
+		`SELECT EXISTS(SELECT * FROM blacklist WHERE pubkey = $1)`,
+		evt.PubKey,
+	)
+	if isBlacklisted {
+		return false
+	}
+
 	// block events that are too large
 	jsonb, _ := json.Marshal(evt)
 
 	return len(jsonb) <= 100000
 }
 
-func (r *Relay) BroadcastEvent(event nostr.Event) {
+func (r *Relay) BroadcastEvent(ctx context.Context, event nostr.Event) {
 	// don't broadcast if this is not production
 	if !r.Prod {
 		return
@@ -105,13 +140,13 @@ func (r *Relay) BroadcastEvent(event nostr.Event) {
 	if event.Kind == 33333 {
 		return
 	}
-	if err := proxy.Broadcast(event); err != nil {
+	if err := proxy.Broadcast(ctx, event); err != nil {
 		log.Printf("broadcast error: %s", err)
 	}
 }
 
 func (r *Relay) SubscribeEvents(ctx context.Context, filters nostr.Filters) {
-	events, _ := proxy.Sub(filters)
+	events, _ := proxy.Sub(ctx, filters)
 
 	go func() {
 		for em := range events {
@@ -134,6 +169,10 @@ func (r *Relay) SubscribeEvents(ctx context.Context, filters nostr.Filters) {
 			time.Sleep(5 * time.Minute)
 		}
 	}()
+}
+
+func (r *Relay) FetchMetadataSync(ctx context.Context, filter nostr.Filter) []nostr.Event {
+	return proxy.FetchMetadataSync(ctx, filter)
 }
 
 /*
@@ -188,9 +227,8 @@ func main() {
 				nostr.KindSetMetadata,    // 0
 				nostr.KindChannelMessage, // 42
 				nostr.KindZap,            // 9735
-				65000,
-				65001,
-				65005,
+				65000, 65001,
+				65005, 65010, 65011, 65012,
 				31990,
 			},
 			Since: &now,

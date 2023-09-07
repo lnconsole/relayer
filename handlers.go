@@ -6,10 +6,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"go.opentelemetry.io/otel"
 	"net/http"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/otel"
 
 	"github.com/gorilla/websocket"
 	"github.com/nbd-wtf/go-nostr"
@@ -162,7 +163,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					// save event
 					AddEvent(ctx, s.relay, evt)
 					// broadcast to relays
-					s.relay.BroadcastEvent(evt)
+					s.relay.BroadcastEvent(ctx, evt)
 					// notify listeners
 					NotifyListeners(&evt)
 
@@ -236,6 +237,14 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 						if advancedQuerier != nil {
 							advancedQuerier.AfterQuery(events, filter)
+						}
+
+						// if kind is 0 and no events were found, search other relay
+						if len(events) == 0 && slices.Contains(filter.Kinds, 0) {
+							events = s.relay.FetchMetadataSync(ctx, *filter)
+							for _, event := range events {
+								AddEvent(ctx, s.relay, event)
+							}
 						}
 
 						// this block should not trigger if the SQL query accounts for filter.Limit

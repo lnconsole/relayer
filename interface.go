@@ -26,9 +26,11 @@ type Relay interface {
 	// in NIP-20.
 	AcceptEvent(*nostr.Event) bool
 	// BroadcastEvent broadcasts event to all other relays
-	BroadcastEvent(nostr.Event)
+	BroadcastEvent(context.Context, nostr.Event)
 	// Storage returns the relay storage implementation.
 	Storage() Storage
+	// FetchMetadata from other relays
+	FetchMetadataSync(context.Context, nostr.Filter) []nostr.Event
 }
 
 // Auther is the interface for implementing NIP-42.
@@ -97,5 +99,5 @@ type AdvancedDeleter interface {
 // AdvancedSaver methods are called before and after [Storage.SaveEvent].
 type AdvancedSaver interface {
 	BeforeSave(*nostr.Event)
-	AfterSave(*nostr.Event)
+	AfterSave(context.Context, *nostr.Event)
 }

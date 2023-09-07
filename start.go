@@ -3,13 +3,14 @@ package relayer
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"sync"
 	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"

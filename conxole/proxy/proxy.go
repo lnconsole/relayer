@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/nbd-wtf/go-nostr"
 )
@@ -38,7 +39,7 @@ func Init(destRelays []string) error {
 	return nil
 }
 
-func Sub(filters nostr.Filters) (stream chan nostr.EventMessage, cleanup Unsub) {
+func Sub(ctx context.Context, filters nostr.Filters) (stream chan nostr.EventMessage, cleanup Unsub) {
 	stream = make(chan nostr.EventMessage)
 	unsub := make(chan struct{})
 
@@ -48,7 +49,7 @@ func Sub(filters nostr.Filters) (stream chan nostr.EventMessage, cleanup Unsub) 
 	}
 
 	for _, relay := range relays {
-		sub := relay.Subscribe(context.Background(), filters)
+		sub := relay.Subscribe(ctx, filters)
 
 		go func(sub *nostr.Subscription) {
 			for evt := range sub.Events {
@@ -80,10 +81,9 @@ func gracefulCleanup(c chan struct{}) {
 	}
 }
 
-func Broadcast(event nostr.Event) error {
+func Broadcast(ctx context.Context, event nostr.Event) error {
 	var (
-		wg  sync.WaitGroup
-		ctx = context.Background()
+		wg sync.WaitGroup
 	)
 	for idx := range relays {
 		wg.Add(1)
@@ -101,4 +101,24 @@ func Broadcast(event nostr.Event) error {
 	wg.Wait()
 
 	return nil
+}
+
+func FetchMetadataSync(ctx context.Context, filter nostr.Filter) []nostr.Event {
+	stream, cleanup := Sub(ctx, nostr.Filters{filter})
+	defer cleanup()
+
+	var (
+		events []nostr.Event
+	)
+LOOP:
+	for {
+		select {
+		case evt := <-stream:
+			events = append(events, evt.Event)
+		case <-time.After(1 * time.Second):
+			break LOOP
+		}
+	}
+
+	return events
 }

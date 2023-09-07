@@ -29,7 +29,7 @@ func AddEvent(ctx context.Context, relay Relay, evt nostr.Event) (accepted bool,
 		}
 
 		if advancedSaver != nil {
-			advancedSaver.AfterSave(&evt)
+			advancedSaver.AfterSave(ctx, &evt)
 		}
 	}
 

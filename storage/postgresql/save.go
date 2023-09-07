@@ -53,10 +53,11 @@ func (b *PostgresBackend) BeforeSave(evt *nostr.Event) {
 	// do nothing
 }
 
-func (b *PostgresBackend) AfterSave(evt *nostr.Event) {
-	// delete all but the 100 most recent ones for each key
-	// b.DB.Exec(`DELETE FROM event WHERE pubkey = $1 AND kind = $2 AND created_at < (
-	//   SELECT created_at FROM event WHERE pubkey = $1
-	//   ORDER BY created_at DESC OFFSET 100 LIMIT 1
-	// )`, evt.PubKey, evt.Kind)
+func (b *PostgresBackend) AfterSave(ctx context.Context, evt *nostr.Event) {
+	// increment count of pubkey in activity table
+	b.DB.Exec(`
+		INSERT INTO activity (pubkey, count)
+		VALUES ($1, 1)
+		ON CONFLICT (pubkey) DO UPDATE SET count = activity.count + 1
+	`, evt.PubKey)
 }
