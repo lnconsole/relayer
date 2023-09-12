@@ -124,15 +124,24 @@ func (b PostgresBackend) QueryEvents(ctx context.Context, filter *nostr.Filter) 
 		params = append(params, filter.Until.Unix())
 	}
 
-	if len(conditions) == 0 {
-		// fallback
-		conditions = append(conditions, "true")
+	if filter.Limit < 0 && filter.Limit > 20000 {
+		// limit is too big or too small, fail everything
+		return
 	}
 
 	limit := ""
 	if filter.Limit > 0 {
 		limit = " LIMIT ?"
 		params = append(params, filter.Limit)
+	}
+
+	if len(conditions) == 0 {
+		if len(params) == 0 {
+			// client wants everything from the db, fail everything
+			return
+		}
+		// fallback
+		conditions = append(conditions, "true")
 	}
 
 	query := b.DB.Rebind(`SELECT
