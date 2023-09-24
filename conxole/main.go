@@ -228,7 +228,7 @@ func main() {
 				nostr.KindChannelMessage, // 42
 				nostr.KindZap,            // 9735
 				65000, 65001,
-				65005, 65007, 65011, 65012,
+				65005, 65007, 65008,
 				31990,
 			},
 			Since: &now,
