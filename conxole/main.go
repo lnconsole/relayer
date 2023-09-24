@@ -73,7 +73,6 @@ func (r *Relay) Init() error {
 				ctx,
 				`DELETE FROM event WHERE kind = 42 AND created_at < $1`,
 				time.Now().Add(-24*time.Hour).Unix(),
-				param,
 			)
 			span.End()
 			time.Sleep(5 * time.Minute)
