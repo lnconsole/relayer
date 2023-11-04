@@ -229,9 +229,11 @@ func main() {
 				5100,                     // Request: Image Generation
 				5101,                     // Request: Background Removal
 				5102,                     // Request: Image Overlay
+				5500,                     // Request: Lightning Prism
 				6100,                     // Result: Image Generation
 				6101,                     // Result: Background Removal
 				6102,                     // Result: Image Overlay
+				6500,                     // Result: Lightning Prism
 				7000,                     // Job Feedback
 				31990,
 			},
