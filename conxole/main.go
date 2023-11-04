@@ -226,8 +226,13 @@ func main() {
 				nostr.KindSetMetadata,    // 0
 				nostr.KindChannelMessage, // 42
 				nostr.KindZap,            // 9735
-				65000, 65001,
-				65005, 65007, 65008,
+				5100,                     // Request: Image Generation
+				5101,                     // Request: Background Removal
+				5102,                     // Request: Image Overlay
+				6100,                     // Result: Image Generation
+				6101,                     // Result: Background Removal
+				6102,                     // Result: Image Overlay
+				7000,                     // Job Feedback
 				31990,
 			},
 			Since: &now,
