@@ -253,6 +253,13 @@ func main() {
 				6500,                     // Result: Lightning Prism
 				7000,                     // Job Feedback
 				31990,                    // NIP-89 Application Handler
+
+				65000, // Legacy Job Feedback
+				65001, // Legacy Job Result
+				65005, // Legacy Image Generation
+				65007, // Legacy Background Removal
+				65008, // Legacy Overlay Images
+				65009, // Legacy Lightning Prism
 			},
 			Since: &now,
 		},
