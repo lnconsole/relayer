@@ -220,22 +220,39 @@ func main() {
 	}
 	// define filters relevant to conxole
 	now := time.Now()
+	nip90MergeDate := time.Date(2023, time.November, 1, 0, 0, 0, 0, time.UTC)
 	filters := nostr.Filters{
 		{
 			Kinds: []int{
 				nostr.KindSetMetadata,    // 0
 				nostr.KindChannelMessage, // 42
 				nostr.KindZap,            // 9735
+				5000,                     // Request: Text Extraction
+				5001,                     // Request: Summarization
+				5002,                     // Request: Translation
 				5100,                     // Request: Image Generation
 				5101,                     // Request: Background Removal
 				5102,                     // Request: Image Overlay
+				5200,                     // Request: Video Conversion
+				5201,                     // Request: Video Translation
+				5300,                     // Request: Content Discovery
+				5301,                     // Request: People Discovery
+				5400,                     // Request: Event Count
 				5500,                     // Request: Lightning Prism
+				6000,                     // Result: Text Extraction
+				6001,                     // Result: Summarization
+				6002,                     // Result: Translation
 				6100,                     // Result: Image Generation
 				6101,                     // Result: Background Removal
 				6102,                     // Result: Image Overlay
+				6200,                     // Result: Video Conversion
+				6201,                     // Result: Video Translation
+				6300,                     // Result: Content Discovery
+				6301,                     // Result: People Discovery
+				6400,                     // Result: Event Count
 				6500,                     // Result: Lightning Prism
 				7000,                     // Job Feedback
-				31990,
+				31990,                    // NIP-89 Application Handler
 			},
 			Since: &now,
 		},
@@ -253,6 +270,12 @@ func main() {
 			},
 			Since: &now,
 			Tags:  nostr.TagMap{"p": []string{r.BeatzcoinPubkey}},
+		},
+		{
+			Kinds: []int{
+				65001, // Legacy Job Result Kind
+			},
+			Until: &nip90MergeDate,
 		},
 	}
 	// subscribe
