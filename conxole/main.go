@@ -58,7 +58,7 @@ func (r *Relay) Init() error {
 		db := r.Storage().(*postgresql.PostgresBackend)
 
 		for {
-			ctx, span := r.tracer.Start(context.Background(), "delete-old-events-job")
+			ctx, span := r.tracer.Start(context.Background(), "DeleteOldEvents")
 			intStrings := []string{}
 			for _, k := range r.PersistKinds {
 				intStrings = append(intStrings, strconv.Itoa(k))
