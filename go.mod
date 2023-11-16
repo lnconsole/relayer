@@ -9,6 +9,7 @@ require (
 	github.com/aquasecurity/esquery v0.2.0
 	github.com/elastic/go-elasticsearch/v8 v8.6.0
 	github.com/fiatjaf/relayer v1.7.2
+	github.com/go-co-op/gocron v1.33.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/jmoiron/sqlx v1.3.5
@@ -18,9 +19,12 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/nbd-wtf/go-nostr v0.13.2
 	github.com/rs/cors v1.7.0
+	github.com/uptrace/opentelemetry-go-extra/otelsql v0.2.2
 	github.com/uptrace/opentelemetry-go-extra/otelsqlx v0.2.2
 	github.com/uptrace/uptrace-go v1.17.0
+	go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.43.0
 	go.opentelemetry.io/otel v1.17.0
+	go.opentelemetry.io/otel/trace v1.17.0
 	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2
 )
 
@@ -37,10 +41,10 @@ require (
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/google/uuid v1.3.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.17.1 // indirect
-	github.com/uptrace/opentelemetry-go-extra/otelsql v0.2.2 // indirect
+	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
-	go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.43.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.43.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.40.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.40.0 // indirect
@@ -50,8 +54,8 @@ require (
 	go.opentelemetry.io/otel/metric v1.17.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.17.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.40.0 // indirect
-	go.opentelemetry.io/otel/trace v1.17.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
+	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/text v0.12.0 // indirect

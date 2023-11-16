@@ -32,6 +32,8 @@ type Relay interface {
 	Storage() Storage
 	// Tracer returns the relay tracer
 	Tracer() trace.Tracer
+	// FetchMetadata from other relays
+	FetchMetadataSync(context.Context, nostr.Filter) []nostr.Event
 }
 
 // Auther is the interface for implementing NIP-42.
@@ -100,5 +102,5 @@ type AdvancedDeleter interface {
 // AdvancedSaver methods are called before and after [Storage.SaveEvent].
 type AdvancedSaver interface {
 	BeforeSave(*nostr.Event)
-	AfterSave(*nostr.Event)
+	AfterSave(context.Context, *nostr.Event)
 }

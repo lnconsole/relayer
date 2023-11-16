@@ -8,7 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel"
+
 	sm "github.com/SaveTheRbtz/generic-sync-map-go"
+	"github.com/go-co-op/gocron"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/lnconsole/relayer"
@@ -16,7 +19,6 @@ import (
 	proxy "github.com/lnconsole/relayer/conxole/proxy"
 	"github.com/lnconsole/relayer/storage/postgresql"
 	"github.com/nbd-wtf/go-nostr"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -45,6 +47,12 @@ func (r *Relay) Storage() relayer.Storage {
 func (r *Relay) OnInitialized(*relayer.Server) {}
 
 func (r *Relay) Init() error {
+	// prune kind0 events once a week
+	s := gocron.NewScheduler(time.UTC)
+	s.Cron("30 9 * * MON").Do(r.PruneProfiles)
+	// s.Cron("* * * * *").Do(r.PruneProfiles)
+	s.StartAsync()
+
 	// keep events for an hour only
 	go func() {
 		db := r.Storage().(*postgresql.PostgresBackend)
@@ -67,7 +75,6 @@ func (r *Relay) Init() error {
 				ctx,
 				`DELETE FROM event WHERE kind = 42 AND created_at < $1`,
 				time.Now().Add(-24*time.Hour).Unix(),
-				param,
 			)
 			span.End()
 			time.Sleep(5 * time.Minute)
@@ -79,10 +86,16 @@ func (r *Relay) Init() error {
 	return nil
 }
 
-func (r *Relay) AcceptEvent(ctx context.Context, evt *nostr.Event) bool {
-	ctx, span := r.tracer.Start(ctx, "AcceptEvent")
+func (r *Relay) PruneProfiles() {
+	ctx, span := r.tracer.Start(context.Background(), "PruneProfiles")
 	defer span.End()
 
+	// delete all profiles that are blacklisted or have activity count below threshold
+	db := r.Storage().(*postgresql.PostgresBackend)
+	db.ExecContext(ctx, "DELETE FROM event WHERE kind = 0 and (pubkey IN (SELECT pubkey FROM blacklist) OR pubkey NOT IN (SELECT pubkey FROM activity WHERE count > 1))")
+}
+
+func (r *Relay) AcceptEvent(ctx context.Context, evt *nostr.Event) bool {
 	// disallow anything from non-authorized pubkeys
 	// found := false
 	// for _, pubkey := range r.Whitelist {
@@ -94,6 +107,24 @@ func (r *Relay) AcceptEvent(ctx context.Context, evt *nostr.Event) bool {
 	// if !found {
 	// 	return false
 	// }
+
+	// reject if kind0 of the event is blacklisted
+	var (
+		db            = r.Storage().(*postgresql.PostgresBackend)
+		isBlacklisted bool
+	)
+	ctx, span := r.tracer.Start(ctx, "AcceptEvent")
+	defer span.End()
+
+	db.GetContext(
+		ctx,
+		&isBlacklisted,
+		`SELECT EXISTS(SELECT * FROM blacklist WHERE pubkey = $1)`,
+		evt.PubKey,
+	)
+	if isBlacklisted {
+		return false
+	}
 
 	// block events that are too large
 	jsonb, _ := json.Marshal(evt)
@@ -122,7 +153,7 @@ func (r *Relay) SubscribeEvents(ctx context.Context, filters nostr.Filters) {
 	ctx, span := r.tracer.Start(ctx, "SubscribeEvents")
 	defer span.End()
 
-	events, _ := proxy.Sub(filters)
+	events, _ := proxy.Sub(ctx, filters)
 
 	go func() {
 		for em := range events {
@@ -149,6 +180,10 @@ func (r *Relay) SubscribeEvents(ctx context.Context, filters nostr.Filters) {
 
 func (r *Relay) Tracer() trace.Tracer {
 	return r.tracer
+}
+
+func (r *Relay) FetchMetadataSync(ctx context.Context, filter nostr.Filter) []nostr.Event {
+	return proxy.FetchMetadataSync(ctx, filter)
 }
 
 /*
@@ -199,16 +234,46 @@ func main() {
 	}
 	// define filters relevant to conxole
 	now := time.Now()
+	nip90MergeDate := time.Date(2023, time.November, 1, 0, 0, 0, 0, time.UTC)
 	filters := nostr.Filters{
 		{
 			Kinds: []int{
 				nostr.KindSetMetadata,    // 0
 				nostr.KindChannelMessage, // 42
 				nostr.KindZap,            // 9735
-				65000,
-				65001,
-				65005,
-				31990,
+				5000,                     // Request: Text Extraction
+				5001,                     // Request: Summarization
+				5002,                     // Request: Translation
+				5100,                     // Request: Image Generation
+				5101,                     // Request: Background Removal
+				5102,                     // Request: Image Overlay
+				5200,                     // Request: Video Conversion
+				5201,                     // Request: Video Translation
+				5300,                     // Request: Content Discovery
+				5301,                     // Request: People Discovery
+				5400,                     // Request: Event Count
+				5500,                     // Request: Lightning Prism
+				6000,                     // Result: Text Extraction
+				6001,                     // Result: Summarization
+				6002,                     // Result: Translation
+				6100,                     // Result: Image Generation
+				6101,                     // Result: Background Removal
+				6102,                     // Result: Image Overlay
+				6200,                     // Result: Video Conversion
+				6201,                     // Result: Video Translation
+				6300,                     // Result: Content Discovery
+				6301,                     // Result: People Discovery
+				6400,                     // Result: Event Count
+				6500,                     // Result: Lightning Prism
+				7000,                     // Job Feedback
+				31990,                    // NIP-89 Application Handler
+
+				65000, // Legacy Job Feedback
+				65001, // Legacy Job Result
+				65005, // Legacy Image Generation
+				65007, // Legacy Background Removal
+				65008, // Legacy Overlay Images
+				65009, // Legacy Lightning Prism
 			},
 			Since: &now,
 		},
@@ -226,6 +291,12 @@ func main() {
 			},
 			Since: &now,
 			Tags:  nostr.TagMap{"p": []string{r.BeatzcoinPubkey}},
+		},
+		{
+			Kinds: []int{
+				65001, // Legacy Job Result Kind
+			},
+			Until: &nip90MergeDate,
 		},
 	}
 	// subscribe

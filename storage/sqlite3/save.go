@@ -1,6 +1,7 @@
 package sqlite3
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/fiatjaf/relayer/storage"
@@ -44,7 +45,7 @@ func (b *SQLite3Backend) BeforeSave(evt *nostr.Event) {
 	// do nothing
 }
 
-func (b *SQLite3Backend) AfterSave(evt *nostr.Event) {
+func (b *SQLite3Backend) AfterSave(ctx context.Context, evt *nostr.Event) {
 	// delete all but the 100 most recent ones for each key
 	b.DB.Exec(`DELETE FROM event WHERE pubkey = $1 AND kind = $2 AND created_at < (
       SELECT created_at FROM event WHERE pubkey = $1
