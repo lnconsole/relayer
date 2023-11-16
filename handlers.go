@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/gorilla/websocket"
 	"github.com/nbd-wtf/go-nostr"
@@ -64,6 +64,9 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	// reader
 	go func() {
+		_, span := s.tracer.Start(context.Background(), "handleWebsocket-reader")
+		defer span.End()
+
 		defer func() {
 			ticker.Stop()
 			s.clientsMu.Lock()
@@ -107,7 +110,12 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 			}
 
 			go func(message []byte) {
-				var notice string
+				var (
+					notice    string
+					ctx, span = s.tracer.Start(context.Background(), "handleWebsocket-reader-message")
+				)
+
+				defer span.End()
 				defer func() {
 					if notice != "" {
 						ws.WriteJSON([]interface{}{"NOTICE", notice})
@@ -131,8 +139,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 				switch typ {
 				case "EVENT":
-					ctx, span := otel.Tracer("conxole-relay-tracer").
-						Start(context.Background(), "event")
+					span.SetAttributes(attribute.String("nostr.type", "event"))
 					// it's a new event
 					var evt nostr.Event
 					if err := json.Unmarshal(request[1], &evt); err != nil {
@@ -156,7 +163,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 					// check if relay accepts this event
-					if !s.relay.AcceptEvent(&evt) {
+					if !s.relay.AcceptEvent(ctx, &evt) {
 						ws.WriteJSON([]interface{}{"OK", evt.ID, false, "blocked: event blocked by relay"})
 						return
 					}
@@ -168,11 +175,10 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					NotifyListeners(&evt)
 
 					ws.WriteJSON([]interface{}{"OK", evt.ID, true, message})
-					span.End()
 				case "REQ":
+					span.SetAttributes(attribute.String("nostr.type", "req"))
 					var (
-						id        string
-						ctx, span = otel.Tracer("conxole-relay-tracer").Start(context.Background(), "req")
+						id string
 					)
 					json.Unmarshal(request[1], &id)
 					if id == "" {
@@ -262,11 +268,10 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					// otherwise subscriptions may be cancelled too early
 					ws.WriteJSON([]interface{}{"EOSE", id})
 					setListener(id, ws, filters)
-					span.End()
 				case "CLOSE":
+					span.SetAttributes(attribute.String("nostr.type", "close"))
 					var (
-						id      string
-						_, span = otel.Tracer("conxole-relay-tracer").Start(context.Background(), "close")
+						id string
 					)
 					json.Unmarshal(request[1], &id)
 					if id == "" {
@@ -275,11 +280,8 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					}
 
 					removeListenerId(ws, id)
-					span.End()
 				case "AUTH":
-					var (
-						_, span = otel.Tracer("conxole-relay-tracer").Start(context.Background(), "close")
-					)
+					span.SetAttributes(attribute.String("nostr.type", "auth"))
 					if auther, ok := s.relay.(Auther); ok {
 						var evt nostr.Event
 						if err := json.Unmarshal(request[1], &evt); err != nil {
@@ -293,7 +295,6 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							ws.WriteJSON([]interface{}{"OK", evt.ID, false, "error: failed to authenticate"})
 						}
 					}
-					span.End()
 				default:
 					if cwh, ok := s.relay.(CustomWebSocketHandler); ok {
 						cwh.HandleUnknownType(ws, typ, request)
@@ -307,6 +308,9 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	// writer
 	go func() {
+		_, span := s.tracer.Start(context.Background(), "handleWebsocket-writer")
+		defer span.End()
+
 		defer func() {
 			ticker.Stop()
 			conn.Close()

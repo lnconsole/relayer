@@ -19,6 +19,7 @@ import (
 	proxy "github.com/lnconsole/relayer/conxole/proxy"
 	"github.com/lnconsole/relayer/storage/postgresql"
 	"github.com/nbd-wtf/go-nostr"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Relay struct {
@@ -29,6 +30,7 @@ type Relay struct {
 	BotPubkey        string   `envconfig:"CONXOLE_BOT_PUBKEY"`
 	BeatzcoinPubkey  string   `envconfig:"BEATZCOIN_PUBKEY"`
 	Prod             bool     `envconfig:"PROD"`
+	tracer           trace.Tracer
 
 	storage *postgresql.PostgresBackend
 	seen    sm.MapOf[string, struct{}]
@@ -56,7 +58,7 @@ func (r *Relay) Init() error {
 		db := r.Storage().(*postgresql.PostgresBackend)
 
 		for {
-			ctx, span := otel.Tracer("conxole-relay-tracer").Start(context.Background(), "delete-old-events-job")
+			ctx, span := r.tracer.Start(context.Background(), "DeleteOldEvents")
 			intStrings := []string{}
 			for _, k := range r.PersistKinds {
 				intStrings = append(intStrings, strconv.Itoa(k))
@@ -85,7 +87,7 @@ func (r *Relay) Init() error {
 }
 
 func (r *Relay) PruneProfiles() {
-	ctx, span := otel.Tracer("conxole-relay-tracer").Start(context.Background(), "prune-profiles")
+	ctx, span := r.tracer.Start(context.Background(), "PruneProfiles")
 	defer span.End()
 
 	// delete all profiles that are blacklisted or have activity count below threshold
@@ -93,7 +95,7 @@ func (r *Relay) PruneProfiles() {
 	db.ExecContext(ctx, "DELETE FROM event WHERE kind = 0 and (pubkey IN (SELECT pubkey FROM blacklist) OR pubkey NOT IN (SELECT pubkey FROM activity WHERE count > 1))")
 }
 
-func (r *Relay) AcceptEvent(evt *nostr.Event) bool {
+func (r *Relay) AcceptEvent(ctx context.Context, evt *nostr.Event) bool {
 	// disallow anything from non-authorized pubkeys
 	// found := false
 	// for _, pubkey := range r.Whitelist {
@@ -109,9 +111,9 @@ func (r *Relay) AcceptEvent(evt *nostr.Event) bool {
 	// reject if kind0 of the event is blacklisted
 	var (
 		db            = r.Storage().(*postgresql.PostgresBackend)
-		ctx, span     = otel.Tracer("conxole-relay-tracer").Start(context.Background(), "accept-event")
 		isBlacklisted bool
 	)
+	ctx, span := r.tracer.Start(ctx, "AcceptEvent")
 	defer span.End()
 
 	db.GetContext(
@@ -131,6 +133,9 @@ func (r *Relay) AcceptEvent(evt *nostr.Event) bool {
 }
 
 func (r *Relay) BroadcastEvent(ctx context.Context, event nostr.Event) {
+	ctx, span := r.tracer.Start(ctx, "BroadcastEvent")
+	defer span.End()
+
 	// don't broadcast if this is not production
 	if !r.Prod {
 		return
@@ -145,6 +150,9 @@ func (r *Relay) BroadcastEvent(ctx context.Context, event nostr.Event) {
 }
 
 func (r *Relay) SubscribeEvents(ctx context.Context, filters nostr.Filters) {
+	ctx, span := r.tracer.Start(ctx, "SubscribeEvents")
+	defer span.End()
+
 	events, _ := proxy.Sub(ctx, filters)
 
 	go func() {
@@ -168,6 +176,10 @@ func (r *Relay) SubscribeEvents(ctx context.Context, filters nostr.Filters) {
 			time.Sleep(5 * time.Minute)
 		}
 	}()
+}
+
+func (r *Relay) Tracer() trace.Tracer {
+	return r.tracer
 }
 
 func (r *Relay) FetchMetadataSync(ctx context.Context, filter nostr.Filter) []nostr.Event {
@@ -198,7 +210,9 @@ func main() {
 		}
 	}()
 
-	r := Relay{}
+	r := Relay{
+		tracer: otel.Tracer("conxole-relay-tracer"),
+	}
 	// store env vars in relay
 	if err := envconfig.Process("", &r); err != nil {
 		log.Fatalf("failed to read from env: %v", err)

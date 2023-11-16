@@ -6,6 +6,7 @@ import (
 
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/nbd-wtf/go-nostr/nip11"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Relay is the main interface for implementing a nostr relay.
@@ -24,11 +25,13 @@ type Relay interface {
 	// If the returned value is true, the event is passed on to [Storage.SaveEvent].
 	// Otherwise, the server responds with a negative and "blocked" message as described
 	// in NIP-20.
-	AcceptEvent(*nostr.Event) bool
+	AcceptEvent(context.Context, *nostr.Event) bool
 	// BroadcastEvent broadcasts event to all other relays
 	BroadcastEvent(context.Context, nostr.Event)
 	// Storage returns the relay storage implementation.
 	Storage() Storage
+	// Tracer returns the relay tracer
+	Tracer() trace.Tracer
 	// FetchMetadata from other relays
 	FetchMetadataSync(context.Context, nostr.Filter) []nostr.Event
 }

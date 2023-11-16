@@ -2,6 +2,8 @@ package relayer
 
 import (
 	"context"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"testing"
 	"time"
 
@@ -39,8 +41,9 @@ type testRelay struct {
 	acceptEvent   func(*nostr.Event) bool
 }
 
-func (tr *testRelay) Name() string     { return tr.name }
-func (tr *testRelay) Storage() Storage { return tr.storage }
+func (tr *testRelay) Name() string         { return tr.name }
+func (tr *testRelay) Storage() Storage     { return tr.storage }
+func (tr *testRelay) Tracer() trace.Tracer { return otel.Tracer("test-tracer") }
 
 func (tr *testRelay) Init() error {
 	if fn := tr.init; fn != nil {
@@ -72,9 +75,9 @@ func (tr *testRelay) BroadcastEvent(event nostr.Event) {}
 
 type testStorage struct {
 	init        func() error
-	queryEvents func(*nostr.Filter) ([]nostr.Event, error)
-	deleteEvent func(id string, pubkey string) error
-	saveEvent   func(*nostr.Event) error
+	queryEvents func(context.Context, *nostr.Filter) ([]nostr.Event, error)
+	deleteEvent func(ctx context.Context, id string, pubkey string) error
+	saveEvent   func(context.Context, *nostr.Event) error
 }
 
 func (st *testStorage) Init() error {
@@ -84,23 +87,23 @@ func (st *testStorage) Init() error {
 	return nil
 }
 
-func (st *testStorage) QueryEvents(f *nostr.Filter) ([]nostr.Event, error) {
+func (st *testStorage) QueryEvents(ctx context.Context, f *nostr.Filter) ([]nostr.Event, error) {
 	if fn := st.queryEvents; fn != nil {
-		return fn(f)
+		return fn(ctx, f)
 	}
 	return nil, nil
 }
 
-func (st *testStorage) DeleteEvent(id string, pubkey string) error {
+func (st *testStorage) DeleteEvent(ctx context.Context, id string, pubkey string) error {
 	if fn := st.deleteEvent; fn != nil {
-		return fn(id, pubkey)
+		return fn(ctx, id, pubkey)
 	}
 	return nil
 }
 
-func (st *testStorage) SaveEvent(e *nostr.Event) error {
+func (st *testStorage) SaveEvent(ctx context.Context, e *nostr.Event) error {
 	if fn := st.saveEvent; fn != nil {
-		return fn(e)
+		return fn(ctx, e)
 	}
 	return nil
 }
